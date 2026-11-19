@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mario Tangga Satuan - Game Edukasi Retro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Retro Font Google -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'VT323', monospace;
+            background-color: #5c94fc; /* Mario Sky Blue */
+            user-select: none;
+        }
+
+        .font-pixel {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        /* Canvas Style */
+        #gameCanvas {
+            background: linear-gradient(to bottom, #5c94fc 0%, #7db9e8 70%, #9bc5e5 100%);
+            image-rendering: pixelated;
+        }
+
+        /* Retro Container Box Shadow & Border */
+        .pixel-box {
+            border: 4px solid #000;
+            box-shadow: 4px 4px 0px #000, inset -4px -4px 0px rgba(0,0,0,0.2);
+        }
+
+        .pixel-btn {
+            border: 3px solid #000;
+            box-shadow: 3px 3px 0px #000;
+            transition: all 0.05s ease;
+        }
+
+        .pixel-btn:active:not(:disabled) {
+            transform: translate(3px, 3px);
+            box-shadow: 0px 0px 0px #000;
+        }
+
+        .pixel-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Custom Brick Pattern Header */
+        .brick-bg {
+            background-color: #d86828;
+            background-image: 
+                linear-gradient(90deg, #000 2px, transparent 2px),
+                linear-gradient(180deg, #000 2px, transparent 2px);
+            background-size: 20px 20px;
+        }
+
+        /* Custom Scrollbar for Retro Vibe */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #222;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e52521;
+            border: 2px solid #000;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-4 text-slate-900">
+
+    <!-- Top Header -->
+    <header class="w-full max-w-4xl bg-red-600 text-white pixel-box p-3 md:p-4 mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 md:w-10 md:h-10 bg-yellow-400 rounded flex items-center justify-center border-2 border-black font-pixel text-black font-bold text-lg md:text-xl shadow">
+                ?
+            </div>
+            <div>
+                <h1 class="font-pixel text-xs sm:text-sm md:text-xl text-yellow-300 drop-shadow-[2px_2px_0_#000]">MARIO TANGGA SATUAN</h1>
+                <p class="text-xs md:text-sm text-slate-100 font-sans">Belajar Konversi Satuan Matematika</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4 bg-red-800 p-2 rounded border-2 border-black text-xs md:text-sm">
+            <div>SKOR: <span id="scoreDisplay" class="font-pixel text-yellow-300">0</span></div>
+            <div>STREAK: <span id="streakDisplay" class="font-pixel text-green-400">0 🔥</span></div>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow">
+
+        <!-- Left Controls & Options Panel -->
+        <section class="lg:col-span-1 bg-amber-100 pixel-box p-4 flex flex-col gap-4">
+            
+            <!-- Mode Switcher -->
+            <div class="bg-amber-200 p-2 border-2 border-black rounded">
+                <label class="block font-pixel text-xs mb-2 text-slate-800">PILIH MODE GAME:</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="modeFreeBtn" class="pixel-btn bg-yellow-400 hover:bg-yellow-300 text-black font-pixel text-xs py-2 px-1 text-center font-bold">
+                        BEBAS
+                    </button>
+                    <button id="modeQuizBtn" class="pixel-btn bg-slate-300 hover:bg-slate-200 text-black font-pixel text-xs py-2 px-1 text-center font-bold">
+                        KUIS
+                    </button>
+                </div>
+            </div>
+
+            <!-- Category Selector -->
+            <div>
+                <label class="block font-pixel text-xs mb-1">JENIS SATUAN:</label>
+                <select id="unitCategory" class="w-full bg-white border-2 border-black p-2 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 rounded">
+                    <option value="length">📏 Satuan Panjang (km → mm)</option>
+                    <option value="mass">⚖️ Satuan Massa (kg → mg)</option>
+                </select>
+            </div>
+
+            <!-- Free Mode Inputs -->
+            <div id="freeModeControls" class="flex flex-col gap-2 bg-yellow-50 border-2 border-black p-3 rounded">
+                <label class="block font-pixel text-xs">ANGKA AWAL (KEPALA):</label>
+                <div class="flex gap-2">
+                    <input type="number" id="customValueInput" value="5" class="w-full border-2 border-black p-2 font-bold text-xl rounded focus:outline-none" placeholder="Masukkan angka...">
+                    <button id="setCustomValBtn" class="pixel-btn bg-blue-500 hover:bg-blue-400 text-white font-pixel text-xs px-3 py-1">SET</button>
+                </div>
+                <p class="text-xs text-slate-600 mt-1">Ubah angka di atas kepala Mario untuk mulai eksplorasi.</p>
+            </div>
+
+            <!-- Action Movement Buttons -->
+            <div class="flex flex-col gap-3">
+                <span class="font-pixel text-xs">KONTROL MARIO:</span>
+                <button id="btnUp" class="pixel-btn bg-green-500 hover:bg-green-400 text-white font-pixel text-xs py-3 px-2 flex items-center justify-center gap-2">
+                    <span>⬆ NAIK (BAGI 10)</span>
+                </button>
+                <button id="btnDown" class="pixel-btn bg-orange-500 hover:bg-orange-400 text-white font-pixel text-xs py-3 px-2 flex items-center justify-center gap-2">
+                    <span>⬇ TURUN (KALI 10)</span>
+                </button>
+                <button id="btnReset" class="pixel-btn bg-gray-400 hover:bg-gray-300 text-slate-900 font-pixel text-xs py-2 px-2">
+                    🔄 RESET POSISI
+                </button>
+            </div>
+
+            <!-- Audio Toggle & Helper -->
+            <div class="mt-auto flex items-center justify-between border-t-2 border-black pt-3">
+                <button id="soundToggleBtn" class="pixel-btn bg-purple-500 hover:bg-purple-400 text-white font-pixel text-[10px] px-2 py-1">
+                    🔊 SUARA: ON
+                </button>
+                <span class="text-xs text-slate-500">v1.0 Retro Ed</span>
+            </div>
+        </section>
+
+        <!-- Right Game Viewport & Interactive Ladder -->
+        <section class="lg:col-span-2 bg-slate-900 pixel-box p-3 flex flex-col justify-between relative overflow-hidden">
+            
+            <!-- Quiz Bar Banner (Visible in Quiz Mode) -->
+            <div id="quizBanner" class="bg-yellow-300 border-2 border-black p-3 mb-2 rounded flex flex-col sm:flex-row items-center justify-between gap-2 shadow">
+                <div class="text-slate-900 font-bold text-sm sm:text-base leading-tight">
+                    <span class="bg-red-600 text-white font-pixel text-[10px] px-2 py-1 rounded inline-block mr-1 mb-1 sm:mb-0">SOAL</span>
+                    <span id="quizQuestionText">Bantu Mario mengubah 5 km menjadi ... m!</span>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button id="btnSubmitAnswer" class="pixel-btn bg-green-600 hover:bg-green-500 text-white font-pixel text-xs px-3 py-2 flex-grow sm:flex-grow-0">
+                        KIRIM JAWABAN
+                    </button>
+                    <button id="btnNextQuiz" class="pixel-btn bg-blue-600 hover:bg-blue-500 text-white font-pixel text-xs px-3 py-2">
+                        SOAL BARU
+                    </button>
+                </div>
+            </div>
+
+            <!-- Visual Canvas Container -->
+            <div class="relative w-full h-[420px] bg-sky-300 rounded border-2 border-black overflow-hidden flex-grow shadow-inner">
+                <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+                <!-- Feedback Floating Overlay -->
+                <div id="feedbackOverlay" class="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center hidden z-20">
+                    <div id="feedbackCard" class="bg-white border-4 border-black p-6 rounded-lg text-center max-w-xs shadow-2xl transform transition-transform scale-95">
+                        <div id="feedbackIcon" class="text-5xl mb-2">🎉</div>
+                        <h3 id="feedbackTitle" class="font-pixel text-lg font-bold mb-2">HEBAT!</h3>
+                        <p id="feedbackMessage" class="text-base text-slate-700 mb-4 font-bold">Jawaban kamu tepat sekali!</p>
+                        <button id="feedbackCloseBtn" class="pixel-btn bg-yellow-400 hover:bg-yellow-300 text-black font-pixel text-xs px-4 py-2 w-full">
+                            LANJUTKAN
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Rule Info Footer inside Game view -->
+            <div class="mt-2 bg-slate-800 text-slate-200 text-xs p-2 rounded border border-slate-700 flex justify-between items-center">
+                <div>💡 <span class="font-bold text-yellow-400">Aturan:</span> Naik 1 tangga = Bagi 10 (:10) | Turun 1 tangga = Kali 10 (x10)</div>
+                <div id="currentStepInfo" class="font-pixel text-[10px] text-green-300">TANGGA: km</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer Credits -->
+    <footer class="w-full max-w-4xl text-center text-slate-800 text-xs my-2 font-bold">
+        Game Edukasi "Mario Tangga Satuan" &copy; 2026 - Media Pembelajaran Matematika Sekolah Dasar
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- CONSTANTS & UNITS DATA ---
+        const UNITS_DATA = {
+            length: ['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm'],
+            mass: ['kg', 'hg', 'dag', 'g', 'dg', 'cg', 'mg']
+        };
+
+        const UNIT_NAMES = {
+            km: 'Kilometer', hm: 'Hektometer', dam: 'Dekameter', m: 'Meter', dm: 'Desimeter', cm: 'Sentimeter', mm: 'Milimeter',
+            kg: 'Kilogram', hg: 'Hektogram', dag: 'Dekagram', g: 'Gram', dg: 'Desigram', cg: 'Sentigram', mg: 'Miligram'
+        };
+
+        // --- GAME STATE ---
+        let currentCategory = 'length';
+        let currentStepIndex = 0; // 0 is highest (e.g., km/kg), 6 is lowest (e.g., mm/mg)
+        let rawHeadValue = 5; // Current dynamic number on Mario's head
+        let gameMode = 'free'; // 'free' or 'quiz'
+        let soundEnabled = true;
+
+        // Quiz State
+        let quizScore = 0;
+        let quizStreak = 0;
+        let currentQuiz = {
+            startVal: 5,
+            startUnitIdx: 0,
+            targetUnitIdx: 3,
+            targetVal: 5000
+        };
+
+        // --- ANIMATION STATE ---
+        let marioAnim = {
+            yOffset: 0,
+            targetStepIndex: 0,
+            isJumping: false,
+            jumpProgress: 0,
+            jumpDir: 0 // -1 for up, 1 for down
+        };
+
+        // --- AUDIO SYNTHESIZER (Web Audio API) ---
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playRetroSound(type) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'jump') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'win') {
+                // Happy Retro Arpeggio
+                const notes = [261.63, 329.63, 392.00, 523.25];
+                notes.forEach((freq, idx) => {
+                    const noteOsc = audioCtx.createOscillator();
+                    const noteGain = audioCtx.createGain();
+                    noteOsc.type = 'triangle';
+                    noteOsc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    noteGain.gain.setValueAtTime(0.2, now + idx * 0.08);
+                    noteGain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.15);
+                    noteOsc.connect(noteGain);
+                    noteGain.connect(audioCtx.destination);
+                    noteOsc.start(now + idx * 0.08);
+                    noteOsc.stop(now + idx * 0.08 + 0.15);
+                });
+            } else if (type === 'lose') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(80, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        }
+
+        // --- MATH HELPERS ---
+        // Clean floating precision issues (e.g. 0.0000000000000001)
+        function formatMathValue(val) {
+            let res = Number(val.toPrecision(12));
+            return parseFloat(res.toString());
+        }
+
+        function calculateStepValue(startVal, stepsDiff) {
+            // stepsDiff > 0 means moving down (multiply by 10 per step)
+            // stepsDiff < 0 means moving up (divide by 10 per step)
+            let result = startVal * Math.pow(10, stepsDiff);
+            return formatMathValue(result);
+        }
+
+        // --- DOM ELEMENTS ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const unitCategorySelect = document.getElementById('unitCategory');
+        const modeFreeBtn = document.getElementById('modeFreeBtn');
+        const modeQuizBtn = document.getElementById('modeQuizBtn');
+        const freeModeControls = document.getElementById('freeModeControls');
+        const quizBanner = document.getElementById('quizBanner');
+        const quizQuestionText = document.getElementById('quizQuestionText');
+        const customValueInput = document.getElementById('customValueInput');
+        const setCustomValBtn = document.getElementById('setCustomValBtn');
+        const btnUp = document.getElementById('btnUp');
+        const btnDown = document.getElementById('btnDown');
+        const btnReset = document.getElementById('btnReset');
+        const btnSubmitAnswer = document.getElementById('btnSubmitAnswer');
+        const btnNextQuiz = document.getElementById('btnNextQuiz');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const streakDisplay = document.getElementById('streakDisplay');
+        const currentStepInfo = document.getElementById('currentStepInfo');
+        const soundToggleBtn = document.getElementById('soundToggleBtn');
+
+        // Feedback Overlay
+        const feedbackOverlay = document.getElementById('feedbackOverlay');
+        const feedbackCard = document.getElementById('feedbackCard');
+        const feedbackIcon = document.getElementById('feedbackIcon');
+        const feedbackTitle = document.getElementById('feedbackTitle');
+        const feedbackMessage = document.getElementById('feedbackMessage');
+        const feedbackCloseBtn = document.getElementById('feedbackCloseBtn');
+
+        // --- RESIZE CANVAS ---
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- GAME LOGIC FUNCTIONS ---
+        function setCategory(cat) {
+            currentCategory = cat;
+            updateStepInfo();
+            if (gameMode === 'quiz') {
+                generateNewQuiz();
+            }
+        }
+
+        function updateStepInfo() {
+            const units = UNITS_DATA[currentCategory];
+            const currentUnit = units[currentStepIndex];
+            currentStepInfo.innerText = `TANGGA: ${currentUnit} (${UNIT_NAMES[currentUnit]})`;
+        }
+
+        function moveMario(direction) {
+            // direction: -1 for UP (towards smaller stepIndex, divide 10)
+            // direction: +1 for DOWN (towards larger stepIndex, multiply 10)
+            if (marioAnim.isJumping) return; // Prevent double jump mid-air
+
+            const newIndex = currentStepIndex + direction;
+            if (newIndex < 0 || newIndex > 6) return; // Out of bounds
+
+            marioAnim.isJumping = true;
+            marioAnim.jumpProgress = 0;
+            marioAnim.jumpDir = direction;
+            marioAnim.targetStepIndex = newIndex;
+
+            playRetroSound('jump');
+
+            // Apply value calculation
+            if (direction === -1) {
+                // Moving UP = Divide by 10
+                rawHeadValue = formatMathValue(rawHeadValue / 10);
+            } else if (direction === 1) {
+                // Moving DOWN = Multiply by 10
+                rawHeadValue = formatMathValue(rawHeadValue * 10);
+            }
+
+            currentStepIndex = newIndex;
+            updateStepInfo();
+        }
+
+        function resetPosition() {
+            if (gameMode === 'quiz') {
+                currentStepIndex = currentQuiz.startUnitIdx;
+                rawHeadValue = currentQuiz.startVal;
+            } else {
+                currentStepIndex = 0;
+            }
+            marioAnim.isJumping = false;
+            marioAnim.jumpProgress = 0;
+            updateStepInfo();
+        }
+
+        function setMode(mode) {
+            gameMode = mode;
+            if (mode === 'free') {
+                modeFreeBtn.className = "pixel-btn bg-yellow-400 text-black font-pixel text-xs py-2 px-1 text-center font-bold";
+                modeQuizBtn.className = "pixel-btn bg-slate-300 hover:bg-slate-200 text-black font-pixel text-xs py-2 px-1 text-center font-bold";
+                freeModeControls.classList.remove('hidden');
+                quizBanner.classList.add('hidden');
+                rawHeadValue = parseFloat(customValueInput.value) || 5;
+                currentStepIndex = 0;
+            } else {
+                modeQuizBtn.className = "pixel-btn bg-yellow-400 text-black font-pixel text-xs py-2 px-1 text-center font-bold";
+                modeFreeBtn.className = "pixel-btn bg-slate-300 hover:bg-slate-200 text-black font-pixel text-xs py-2 px-1 text-center font-bold";
+                freeModeControls.classList.add('hidden');
+                quizBanner.classList.remove('hidden');
+                generateNewQuiz();
+            }
+            updateStepInfo();
+        }
+
+        function generateNewQuiz() {
+            const units = UNITS_DATA[currentCategory];
+            // Pick random start unit index & target unit index (ensure they are different)
+            let startIdx = Math.floor(Math.random() * 7);
+            let targetIdx;
+            do {
+                targetIdx = Math.floor(Math.random() * 7);
+            } while (targetIdx === startIdx);
+
+            // Random initial simple values
+            const sampleValues = [1, 2, 3, 4, 5, 8, 10, 12, 15, 20, 50, 100, 250];
+            let startVal = sampleValues[Math.floor(Math.random() * sampleValues.length)];
+
+            // Target calculation
+            let stepsDiff = targetIdx - startIdx;
+            let targetVal = calculateStepValue(startVal, stepsDiff);
+
+            currentQuiz = {
+                startVal: startVal,
+                startUnitIdx: startIdx,
+                targetUnitIdx: targetIdx,
+                targetVal: targetVal
+            };
+
+            // Apply quiz start state to Mario
+            currentStepIndex = startIdx;
+            rawHeadValue = startVal;
+            marioAnim.isJumping = false;
+
+            // Render text
+            quizQuestionText.innerHTML = `Bantu Mario mengubah <span class="text-red-600 font-pixel font-bold">${startVal} ${units[startIdx]}</span> menjadi <span class="text-blue-700 font-pixel font-bold">... ${units[targetIdx]}</span>!`;
+            updateStepInfo();
+        }
+
+        function checkAnswer() {
+            const units = UNITS_DATA[currentCategory];
+            const userUnitIdx = currentStepIndex;
+            const userVal = rawHeadValue;
+
+            if (userUnitIdx === currentQuiz.targetUnitIdx && userVal === currentQuiz.targetVal) {
+                // Correct!
+                quizScore += 10;
+                quizStreak += 1;
+                scoreDisplay.innerText = quizScore;
+                streakDisplay.innerText = `${quizStreak} 🔥`;
+                playRetroSound('win');
+
+                showFeedback(
+                    '🎉',
+                    'BENAR! BRILLIAN!',
+                    `Mario berhasil mengubah ${currentQuiz.startVal} ${units[currentQuiz.startUnitIdx]} menjadi ${userVal} ${units[userUnitIdx]}! (+10 Poin)`
+                );
+            } else {
+                // Incorrect
+                quizStreak = 0;
+                streakDisplay.innerText = `0 🔥`;
+                playRetroSound('lose');
+
+                const targetUnitName = units[currentQuiz.targetUnitIdx];
+                showFeedback(
+                    '😅',
+                    'BELUM TEPAT!',
+                    `Mario saat ini berada di tangga ${units[userUnitIdx]} (${userVal}). Bawa Mario ke tangga '${targetUnitName}' agar nilainya tepat ${currentQuiz.targetVal}!`
+                );
+            }
+        }
+
+        function showFeedback(icon, title, msg) {
+            feedbackIcon.innerText = icon;
+            feedbackTitle.innerText = title;
+            feedbackMessage.innerText = msg;
+            feedbackOverlay.classList.remove('hidden');
+            setTimeout(() => {
+                feedbackCard.classList.remove('scale-95');
+                feedbackCard.classList.add('scale-100');
+            }, 10);
+        }
+
+        function hideFeedback() {
+            feedbackOverlay.classList.add('hidden');
+            feedbackCard.classList.remove('scale-100');
+            feedbackCard.classList.add('scale-95');
+        }
+
+        // --- DRAWING FUNCTIONS (PIXEL GRAPHICS ON CANVAS) ---
+
+        function drawPixelMario(ctx, x, y, scale = 2.5) {
+            // Pixel art matrix for 8-bit Mario stance
+            // 1: Red, 2: Brown/Tan, 3: Blue, 4: Yellow/Gold, 0: Transparent
+            const pixelMap = [
+                [0,0,0,1,1,1,1,1,0,0,0,0],
+                [0,0,1,1,1,1,1,1,1,1,1,0],
+                [0,0,2,2,2,4,4,2,4,0,0,0],
+                [0,2,4,2,4,4,4,2,4,4,4,0],
+                [0,2,4,2,2,4,4,4,2,4,4,4],
+                [0,2,2,4,4,4,4,2,2,2,2,0],
+                [0,0,0,4,4,4,4,4,4,4,0,0],
+                [0,0,1,1,3,1,1,1,0,0,0,0],
+                [0,1,1,1,3,1,1,3,1,1,1,0],
+                [1,1,1,1,3,3,3,3,1,1,1,1],
+                [2,2,1,3,4,3,3,4,3,1,2,2],
+                [2,2,2,3,3,3,3,3,3,2,2,2],
+                [2,2,3,3,3,3,3,3,3,3,2,2],
+                [0,0,3,3,3,0,0,3,3,3,0,0],
+                [0,2,2,2,0,0,0,0,2,2,2,0],
+                [2,2,2,2,0,0,0,0,2,2,2,2]
+            ];
+
+            const colorPalette = {
+                1: '#e52521', // Red
+                2: '#8d5423', // Brown
+                3: '#0020c2', // Blue
+                4: '#fcc02f'  // Skin/Yellowish
+            };
+
+            const spriteWidth = 12 * scale;
+            const spriteHeight = 16 * scale;
+            const drawX = x - spriteWidth / 2;
+            const drawY = y - spriteHeight;
+
+            ctx.save();
+            for (let r = 0; r < 16; r++) {
+                for (let c = 0; c < 12; c++) {
+                    const colorKey = pixelMap[r][c];
+                    if (colorKey !== 0) {
+                        ctx.fillStyle = colorPalette[colorKey];
+                        ctx.fillRect(drawX + c * scale, drawY + r * scale, scale, scale);
+                    }
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawFloatingHeadBox(ctx, x, y, valueText) {
+            ctx.save();
+            ctx.font = "bold 18px 'Press Start 2P', monospace";
+            const textMetrics = ctx.measureText(valueText);
+            const paddingX = 14;
+            const paddingY = 10;
+            const boxWidth = Math.max(80, textMetrics.width + paddingX * 2);
+            const boxHeight = 36;
+            const boxX = x - boxWidth / 2;
+            
+            // Render box right above Mario's head with safe bounds check
+            let boxY = y - boxHeight - 44; 
+            if (boxY < 8) {
+                boxY = 8; // Ensure box never clips top edge of canvas
+            }
+
+            // Speech Bubble Pointer Triangle
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.moveTo(x - 8, boxY + boxHeight);
+            ctx.lineTo(x + 8, boxY + boxHeight);
+            ctx.lineTo(x, boxY + boxHeight + 8);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(x - 6, boxY + boxHeight - 2);
+            ctx.lineTo(x + 6, boxY + boxHeight - 2);
+            ctx.lineTo(x, boxY + boxHeight + 6);
+            ctx.closePath();
+            ctx.fill();
+
+            // Outer Pixel Box (Border)
+            ctx.fillStyle = '#000';
+            ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+            // Inner Box Background (Digital Retro Screen)
+            ctx.fillStyle = '#fce029'; // Bright Gold
+            ctx.fillRect(boxX + 3, boxY + 3, boxWidth - 6, boxHeight - 6);
+
+            // Draw Inner Value Text
+            ctx.fillStyle = '#000';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(valueText, x, boxY + boxHeight / 2);
+
+            ctx.restore();
+        }
+
+        function drawLadderAndScene() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const units = UNITS_DATA[currentCategory];
+
+            // Clear Canvas
+            ctx.clearRect(0, 0, w, h);
+
+            // --- Background Clouds & Scenery ---
+            ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+            // Simple Pixel Clouds (Positioned slightly lower to keep top clear)
+            ctx.fillRect(w * 0.1, 40, 60, 20);
+            ctx.fillRect(w * 0.12, 30, 40, 10);
+            ctx.fillRect(w * 0.7, 70, 80, 24);
+            ctx.fillRect(w * 0.73, 58, 50, 14);
+
+            // --- Vertical Staircase Layout Calculation ---
+            // Increased top padding to 110px so Mario & head text fit comfortably at step 0 (km/kg)
+            const startX = w * 0.22;
+            const endX = w * 0.72;
+            const topY = 110; 
+            const bottomY = h - 55;
+            const stepYHeight = (bottomY - topY) / 6;
+            const stepXWidth = (endX - startX) / 6;
+
+            // Ground Floor Brick Pattern
+            ctx.fillStyle = '#d86828'; // Brick Red
+            ctx.fillRect(0, h - 25, w, 25);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, h - 25, w, 3);
+            for (let bx = 0; bx < w; bx += 30) {
+                ctx.fillRect(bx, h - 25, 2, 25);
+            }
+
+            // Draw Staircase Blocks & Rungs
+            for (let i = 0; i < 7; i++) {
+                const stepX = startX + i * stepXWidth;
+                const stepY = topY + i * stepYHeight;
+
+                // Block Support Column
+                ctx.fillStyle = '#8d5423'; // Wood/Dirt brown
+                ctx.fillRect(stepX - 35, stepY, 70, bottomY - stepY + 10);
+                
+                // Brick/Block Cap
+                ctx.fillStyle = (i === currentStepIndex) ? '#f8b800' : '#d86828';
+                ctx.fillRect(stepX - 40, stepY - 10, 80, 20);
+                
+                // Block Outline
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(stepX - 40, stepY - 10, 80, 20);
+
+                // Highlight Target Step in Quiz Mode
+                if (gameMode === 'quiz' && i === currentQuiz.targetUnitIdx) {
+                    ctx.strokeStyle = '#22c55e'; // Green pulse border for target
+                    ctx.lineWidth = 5;
+                    ctx.strokeRect(stepX - 43, stepY - 13, 86, 26);
+
+                    // Target Flag / Marker
+                    ctx.fillStyle = '#22c55e';
+                    ctx.font = "bold 12px 'Press Start 2P', monospace";
+                    ctx.fillText("TARGET", stepX - 25, stepY - 22);
+                }
+
+                // Step Unit Label
+                ctx.fillStyle = (i === currentStepIndex) ? '#000' : '#fff';
+                ctx.font = "bold 14px 'Press Start 2P', monospace";
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(units[i], stepX, stepY);
+            }
+
+            // --- Mario Animation Logic & Position Calculation ---
+            let currentX = startX + currentStepIndex * stepXWidth;
+            let currentY = topY + currentStepIndex * stepYHeight - 10;
+
+            if (marioAnim.isJumping) {
+                marioAnim.jumpProgress += 0.08; // Jump Speed
+
+                if (marioAnim.jumpProgress >= 1) {
+                    marioAnim.jumpProgress = 1;
+                    marioAnim.isJumping = false;
+                }
+
+                const prevIndex = currentStepIndex - marioAnim.jumpDir;
+                const prevX = startX + prevIndex * stepXWidth;
+                const prevY = topY + prevIndex * stepYHeight - 10;
+
+                // Interpolate X & Y
+                currentX = prevX + (currentX - prevX) * marioAnim.jumpProgress;
+                
+                // Parabolic Arc for Jump Y
+                const jumpArc = Math.sin(marioAnim.jumpProgress * Math.PI) * 45;
+                currentY = prevY + (currentY - prevY) * marioAnim.jumpProgress - jumpArc;
+            }
+
+            // Draw Mario Character
+            drawPixelMario(ctx, currentX, currentY, 2.5);
+
+            // Draw Dynamic Speech Bubble with Head Value
+            const displayStr = rawHeadValue.toString();
+            drawFloatingHeadBox(ctx, currentX, currentY, displayStr);
+        }
+
+        // --- MAIN GAME LOOP ---
+        function gameLoop() {
+            drawLadderAndScene();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- EVENT LISTENERS ---
+        btnUp.addEventListener('click', () => moveMario(-1));
+        btnDown.addEventListener('click', () => moveMario(1));
+        btnReset.addEventListener('click', resetPosition);
+
+        // Keyboard Controls (Arrow Up / Arrow Down)
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+                moveMario(-1);
+            } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                moveMario(1);
+            }
+        });
+
+        unitCategorySelect.addEventListener('change', (e) => setCategory(e.target.value));
+
+        modeFreeBtn.addEventListener('click', () => setMode('free'));
+        modeQuizBtn.addEventListener('click', () => setMode('quiz'));
+
+        setCustomValBtn.addEventListener('click', () => {
+            const val = parseFloat(customValueInput.value);
+            if (!isNaN(val)) {
+                rawHeadValue = val;
+            }
+        });
+
+        btnSubmitAnswer.addEventListener('click', checkAnswer);
+        btnNextQuiz.addEventListener('click', generateNewQuiz);
+        feedbackCloseBtn.addEventListener('click', hideFeedback);
+
+        soundToggleBtn.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            soundToggleBtn.innerText = soundEnabled ? "🔊 SUARA: ON" : "🔇 SUARA: OFF";
+            soundToggleBtn.className = soundEnabled 
+                ? "pixel-btn bg-purple-500 hover:bg-purple-400 text-white font-pixel text-[10px] px-2 py-1"
+                : "pixel-btn bg-gray-500 hover:bg-gray-400 text-white font-pixel text-[10px] px-2 py-1";
+        });
+
+        // --- INIT ON LOAD ---
+        window.onload = function () {
+            resizeCanvas();
+            setCategory('length');
+            setMode('free');
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
